@@ -39,7 +39,7 @@ public class Minifier {
         RAW_TRANSLATIONS.put('o', "i");
 
         TRANSLATIONS = RAW_TRANSLATIONS.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> "<" + e.getValue() + ">"));
-        CLOSERS = RAW_TRANSLATIONS.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> "<\\" + e.getValue() + ">"));
+        CLOSERS = RAW_TRANSLATIONS.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> "</" + e.getValue() + ">"));
     }
 
     private final char legacyChar;
@@ -61,8 +61,8 @@ public class Minifier {
         final int maxIndex = chars.length - 1; // max index
 
         boolean expectingCodes = false;
-        StringBuilder colourClosers = new StringBuilder(); // everything that is awaiting closure
-        StringBuilder decorationClosers = new StringBuilder(); // specifically decorations awaiting closure
+        String firstCloser = ""; // we use implicit closing to close multiple tags at once
+        String firstDecorationCloser = "";
         // this looks until the second last index, as formatting char would have to be at the last index
         for (int i = 0; i < maxIndex; i++) {
             char c = chars[i];
@@ -70,10 +70,9 @@ public class Minifier {
                 // Next char can be a formatting code
                 if (c == RESET) {
                     // close all previous colours/decorations
-                    result.append(colourClosers);
-                    result.append(decorationClosers);
-                    colourClosers.setLength(0); // everything has been closed
-                    decorationClosers.setLength(0);
+                    result.append(firstCloser);
+                    firstCloser = "";
+                    firstDecorationCloser = "";
                     continue; // No further action required
                 }
 
@@ -85,12 +84,15 @@ public class Minifier {
                 } else {
                     if (DECORATIONS.contains(c)) {
                         // decoration character
-                        decorationClosers.append(CLOSERS.get(c));
+                        if (firstDecorationCloser.isEmpty()) {
+                            firstDecorationCloser = CLOSERS.get(c);
+                        }
                     } else {
-                        colourClosers.append(CLOSERS.get(c));
+                        if (firstCloser.isEmpty()) {
+                            firstCloser = CLOSERS.get(c);
+                        }
                         // color char, need to end all previous decorations
-                        result.append(decorationClosers);
-                        decorationClosers.setLength(0);
+                        result.append(firstDecorationCloser);
                     }
 
                     // char was a code, add replacement
@@ -107,8 +109,7 @@ public class Minifier {
 
         // Need to append the last char that we didn't iterate over
         result.append(chars[chars.length -1]);
-        result.append(colourClosers); // close everything
-        result.append(decorationClosers);
+        result.append(firstCloser);
         return result.toString();
     }
 }

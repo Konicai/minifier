@@ -41,28 +41,32 @@ public class TranslationTest {
     public void testReset() {
         String legacy = "§6oHello §rthere.";
         String actual = minifier.translate(legacy);
-        assertMiniEquals("<gold><i>Hello <\\gold><\\i>there.", actual);
+        assertMiniEquals("<gold><i>Hello </i></gold>there.", actual);
     }
 
     @Test
     public void testFormat() {
         String legacy = "§lHello §othere.";
         String actual = minifier.translate(legacy);
-        assertMiniEquals("<b>Hello <i>there.<\\b><\\i>", actual);
+        assertMiniEquals("<b>Hello <i>there.</i></b>", actual);
     }
 
     @Test
     public void testColourAfterFormat() {
         String legacy = "§nThe§l quick§o brown§6 fox...";
         String actual = minifier.translate(legacy);
-        String expected = "<u>The<b> quick<i> brown<\\u><\\b><\\i><gold> fox...<\\gold>";
+        String expected = "<u>The<b> quick<i> brown</i></b></u><gold> fox...</gold>";
         assertMiniEquals(expected, actual);
     }
 
     @Test
-    public void testLegacyWithMini() {
-        String hybrid = "<click:run_command:'/say §chello>Click'</click> to say hello";
-        String mini = "<click:run_command:'/say <red>hello>Click'</click> to say hello";
+    public void testImplicitCosing() {
+        String legacy = "§nThe§l quick§o brown§6 fox...";
+        String actual = minifier.translate(legacy);
+        String explicit = "<u>The<b> quick<i> brown</i></b></u><gold> fox...</gold>";
+        String implicit = "<u>The<b> quick<i> brown</u><gold> fox...</gold>";
+        assertMiniEquals(explicit, actual);
+        assertMiniEquals(implicit, actual);
     }
 
     @Test
